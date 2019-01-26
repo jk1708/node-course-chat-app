@@ -21,18 +21,28 @@ socket.on('disconnect', function () {
 });
 
 socket.on('newMessage', function (message) {
-  console.log('newMessage', message);
-  var li= jQuery('<li></li>');
-  li.text(`${message.from}: ${message.text}`);
-  jQuery('#messages').append(li);
+  var formattedTime= moment(message.createdAt).format('h:mm a');
+  var template= jQuery('#message-template').html();
+  var html=Mustache.render(template,{
+    from: message.from,
+    createdAt: formattedTime,
+    text: message.text
+  });
+
+  jQuery('#messages').append(html);
 });
 socket.on('newLocationMessage', function(locationmessage){
-  var li= jQuery('<li></li>');
-  li.text(`${locationmessage.from}: `);
-  var a= jQuery('<a target="_blank">My Current Location</a>');
-  a.attr('href',locationmessage.url);
-  li.append(a);
-    jQuery('#messages').append(li);
+    var formatTime= moment(locationmessage.createdAt).format('h:mm a');
+
+
+var template= jQuery('#location-message-template').html();
+var html= Mustache.render(template,{
+  from: locationmessage.from,
+  createdAt: formatTime,
+  url:locationmessage.url
+});
+
+    jQuery('#messages').append(html);
 });
 socket.emit('createMessage', {
   from: 'Frank',
@@ -40,12 +50,14 @@ socket.emit('createMessage', {
 }, function(data){
   console.log('got it', data);
 });
+var messageTextBox= jQuery('[name=message]');
 jQuery('#message-form').on('submit', function(e){
   e.preventDefault();
   socket.emit('createMessage',{
     from: 'User',
-    text: jQuery('[name=message]').val()
+    text: messageTextBox.val()
   }, function(){
+    messageTextBox.val('');
 
   });
 });
@@ -55,13 +67,16 @@ llocation.on('click', function(){
   {
   return  alert('geolocation not supported by your browser');
   }
+  llocation.attr('disabled','disabled').text('Sending Location... ');
   navigator.geolocation.getCurrentPosition(function (position){
+    llocation.removeAttr('disabled').text('Send Location');
      socket.emit('createLocationMessage', {latitude: position.coords.latitude,
 longitude: position.coords.longitude
      }
      );
 
   }, function (){
+      llocation.removeAttr('disabled').text('Send Location');
     alert('unable to fetch location');
   });
 });
