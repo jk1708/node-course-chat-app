@@ -69,13 +69,19 @@ socket.broadcast.to(params.room).emit('newMessage', generateMessage('Admin',`${p
 });
 
   socket.on('createMessage', (message, callback) => {
-    console.log('createMessage', message);
-    io.emit('newMessage', generateMessage(message.from, message.text));
+    var user= users.getUser(socket.id);
+    if(user&& isRealString(message.text))
+    {
+      io.to(user.room).emit('newMessage', generateMessage(user.name, message.text));
+    }
+
     callback('this is from server');
 
   });
 socket.on('createLocationMessage',(locmessage)=>{
-  io.emit('newLocationMessage',generateLocationMessage('Admin',`${locmessage.latitude}, ${locmessage.longitude}`));
+  var user= users.getUser(socket.id);
+  if(user){
+  io.to(user.room).emit('newLocationMessage',generateLocationMessage(user.name,`${locmessage.latitude}, ${locmessage.longitude}`));}
 });
   socket.on('disconnect', () => {
     var user= users.removeUser(socket.id);
